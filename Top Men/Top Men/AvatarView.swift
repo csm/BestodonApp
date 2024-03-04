@@ -12,14 +12,16 @@ struct AvatarView: View {
     public let imageUrl: URL
     public let avatarName: String
     public let avatarHandle: String
+    @Binding var unreadCount: UInt32
     
     @State var image: UIImage
     
-    init(imageUrl: URL, avatarName: String, avatarHandle: String) {
+    init(imageUrl: URL, avatarName: String, avatarHandle: String, unreadCount: Binding<UInt32>) {
         self.imageUrl = imageUrl
         self.avatarName = avatarName
         self.avatarHandle = avatarHandle
         self._image = State<UIImage>(initialValue: UIImage(named: "DefaultAvatarImage")!)
+        self._unreadCount = unreadCount
     }
     
     var body: some View {
@@ -27,9 +29,11 @@ struct AvatarView: View {
             let dim = min(proxy.size.width, proxy.size.height)
             let innerDim = dim * 0.85
             let rimDim = (dim - innerDim) / 2
+            let badgeDim = dim * 0.25
+            let badgePos = sqrt((dim/2)*(dim/2))+badgeDim/2+rimDim/2
             ZStack {
                 Circle()
-                    .fill(Color.secondary)
+                    .fill(Color(UIColor(named: "AvatarBorderColor")!))
                     .frame(width: dim, height: dim)
                 AsyncImage(url: imageUrl) { image in
                     image
@@ -48,7 +52,34 @@ struct AvatarView: View {
                 CrookedText(text: avatarHandle, radius: innerDim/2, alignment: .outside, direction: .counterclockwise)
                     .advance(radians: .pi)
                     .font(.system(size: fontSize(dim: rimDim)))
-                //Text("\(innerDim) \(rimDim) \(fontSize(dim: rimDim))")
+                VStack {
+                    Spacer().frame(height: badgePos)
+                    HStack {
+                        Spacer().frame(width: badgePos)
+                        unreadBadge.frame(width: badgeDim, height: badgeDim, alignment: .bottom)
+                    }
+                }
+#if DEBUG
+                //Text("\(innerDim) \(rimDim) \(badgePos)").colorInvert()
+                //Rectangle().stroke(Color.blue)
+#endif
+            }
+        }
+    }
+    
+    private var unreadBadge: some View {
+        GeometryReader { proxy in
+            HStack {
+                if unreadCount == 0 {
+                    EmptyView()
+                } else {
+                    ZStack {
+                        Circle().fill(.red)
+                        Text(unreadCount < 100 ? "\(unreadCount)" : "99+").foregroundStyle(Color.white)
+                            .font(.system(size: fontSize(dim: proxy.size.width * 0.5), weight: .bold))
+                            .minimumScaleFactor(0.1)
+                    }
+                }
             }
         }
     }
@@ -69,7 +100,10 @@ struct AvatarView: View {
     }
 }
 
-#Preview {
-    AvatarView(imageUrl: URL(string: "https://media.me.dm/accounts/avatars/110/040/810/697/085/526/original/d864c2ba46e020a9.jpeg")!, avatarName: "Casey Marshall", avatarHandle: "@rsdio")
-        .frame(width: 300, height: 500)
+struct AvatarView_Previews: PreviewProvider {
+    @State static var unreadCount: UInt32 = 1
+    static var previews: some View {
+        AvatarView(imageUrl: URL(string: "https://media.me.dm/accounts/avatars/110/040/810/697/085/526/original/d864c2ba46e020a9.jpeg")!, avatarName: "Casey Marshall", avatarHandle: "@rsdio", unreadCount: $unreadCount)
+            .frame(width: 300, height: 500)
+    }
 }

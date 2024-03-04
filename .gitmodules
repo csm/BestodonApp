@@ -1,0 +1,3 @@
+[submodule "IceCubesApp"]
+	path = IceCubesApp
+	url = https://github.com/Dimillian/IceCubesApp.git
